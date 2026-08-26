@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Murlidhar Filling Station - Daily Accounts</title>
+    <!-- Supabase JS Client SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --ioc-orange: #FF6600;
+            --ioc-navy: #003366;
+            --ioc-light-blue: #EBF3FA;
+            --ioc-dark-navy: #001F3F;
+            --white: #FFFFFF;
+            --gray-light: #F4F6F9;
+            --gray-border: #D1D5DB;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--gray-light);
+            color: #333;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Login Screen Overlay */
+        .login-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background: linear-gradient(135deg, var(--ioc-navy), var(--ioc-dark-navy));
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .login-box {
+            background: var(--white);
+            padding: 2.5rem;
+            border-radius: 10px;
+            width: 360px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            border-top: 5px solid var(--ioc-orange);
+            display: flex;
+            flex-direction: column;
+            gap: 1.2rem;
+            animation: slideDown 0.3s ease;
+        }
+
+        .login-box h2 {
+            color: var(--ioc-navy);
+            text-align: center;
+            font-size: 1.4rem;
+        }
+
+        .login-box p {
+            color: var(--ioc-orange);
+            text-align: center;
+            font-weight: 600;
+            font-size: 0.85rem;
+            margin-top: -10px;
+        }
+
+        .login-field {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .login-field label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--ioc-navy);
+        }
+
+        .login-field input {
+            padding: 10px;
+            border: 1px solid var(--gray-border);
+            border-radius: 6px;
+            outline: none;
+            font-size: 0.95rem;
+        }
+
+        .login-field input:focus {
+            border-color: var(--ioc-orange);
+        }
+
+        .btn-login {
+            background: var(--ioc-orange);
+            color: var(--white);
+            border: none;
+            padding: 12px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .btn-login:hover {
+            background: #e65c00;
+        }
+
+        .login-error {
+            color: #d32f2f;
+            font-size: 0.85rem;
+            text-align: center;
+            display: none;
+        }
+
+        /* Header Styling */
+        header {
+            background: linear-gradient(135deg, var(--ioc-navy), var(--ioc-dark-navy));
+            color: var(--white);
+            padding: 1rem 2rem;
+            border-bottom: 5px solid var(--ioc-orange);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .brand-logo {
+            width: 45px;
+            height: 45px;
+            background: var(--ioc-orange);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+            color: var(--white);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .brand-title h1 {
+            font-size: 1.5rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .brand-title p {
+            font-size: 0.85rem;
+            color: var(--ioc-orange);
+            font-weight: 600;
+        }
+
+        .btn-logout {
+            background: transparent;
+            color: var(--white);
+            border: 1px solid var(--ioc-orange);
+            padding: 6px 14px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.3s;
+        }
+
+        .btn-logout:hover {
+            background: var(--ioc-orange);
+        }
+
+        /* Container Layout */
+        .main-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            height: calc(100vh - 75px);
+        }
+
+        /* Sidebar Styling */
+        sidebar {
+            width: 320px;
+            background: var(--white);
+            border-right: 1px solid var(--gray-border);
+            display: flex;
+            flex-direction: column;
+            padding: 1rem;
+            gap: 1rem;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 10px 14px;
+            border: 2px solid var(--gray-border);
+            border-radius: 6px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .search-box input:focus {
+            border-color: var(--ioc-orange);
+        }
+
+        .btn-add-account {
+            background: var(--ioc-orange);
+            color: var(--white);
+            border: none;
+            padding: 10px 14px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s, transform 0.1s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-add-account:hover {
+            background: #e65c00;
+        }
+
+        .btn-add-account:active {
+            transform: scale(0.98);
+        }
+
+        .account-list {
+            list-style: none;
+            overflow-y: auto;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .account-item {
+            padding: 12px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            background: var(--gray-light);
+            border-left: 4px solid transparent;
+            transition: all 0.2s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .account-item:hover {
+            background: var(--ioc-light-blue);
+        }
+
+        .account-item.active {
+            background: var(--ioc-light-blue);
+            border-left-color: var(--ioc-orange);
+            font-weight: bold;
+            color: var(--ioc-navy);
+        }
+
+        .account-name {
+            font-size: 0.95rem;
+        }
+
+        .account-code {
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        /* Content Area */
+        .content {
+            flex: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            animation: fadeIn 0.4s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .party-card {
+            background: var(--white);
+            padding: 1.2rem 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 3px solid var(--ioc-navy);
+        }
+
+        .party-details h2 {
+            color: var(--ioc-navy);
+            font-size: 1.3rem;
+        }
+
+        .party-details p {
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: 4px;
+        }
+
+        .balance-badge {
+            background: var(--ioc-light-blue);
+            padding: 10px 18px;
+            border-radius: 8px;
+            border: 1px solid #cbe0f5;
+            text-align: right;
+        }
+
+        .balance-badge span {
+            display: block;
+            font-size: 0.8rem;
+            color: var(--ioc-navy);
+            font-weight: 600;
+        }
+
+        .balance-badge strong {
+            font-size: 1.3rem;
+            color: var(--ioc-orange);
+        }
+
+        /* Table Styling */
+        .table-container {
+            background: var(--white);
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.88rem;
+        }
+
+        th {
+            background: var(--ioc-navy);
+            color: var(--white);
+            padding: 10px;
+            text-align: center;
+            font-weight: 600;
+            border: 1px solid #00264d;
+        }
+
+        td {
+            padding: 8px 10px;
+            border: 1px solid var(--gray-border);
+            text-align: center;
+        }
+
+        tbody tr:nth-child(even) {
+            background-color: #f9bf9610;
+        }
+
+        tbody tr:hover {
+            background-color: var(--ioc-light-blue);
+        }
+
+        input.table-input, select.table-input {
+            width: 100%;
+            padding: 6px;
+            border: 1px solid var(--gray-border);
+            border-radius: 4px;
+            text-align: center;
+            outline: none;
+            font-size: 0.85rem;
+        }
+
+        input.table-input:focus, select.table-input:focus {
+            border-color: var(--ioc-orange);
+        }
+
+        .btn-add-row {
+            background: var(--ioc-navy);
+            color: var(--white);
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-top: 10px;
+            transition: background 0.3s;
+        }
+
+        .btn-add-row:hover {
+            background: var(--ioc-dark-navy);
+        }
+
+        /* Modal Popup */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .modal-content {
+            background: var(--white);
+            padding: 2rem;
+            border-radius: 8px;
+            width: 350px;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-content h3 {
+            color: var(--ioc-navy);
+        }
+
+        .modal-content input {
+            padding: 8px 12px;
+            border: 1px solid var(--gray-border);
+            border-radius: 4px;
+            outline: none;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .btn-secondary {
+            background: #999;
+            color: var(--white);
+            border: none;
+            padding: 8px 14px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Security Login Screen -->
+    <div class="login-overlay" id="loginOverlay">
+        <div class="login-box">
+            <h2>MURLIDHAR FILLING STATION</h2>
+            <p>Indian Oil Dealer Portal</p>
+            <div class="login-field">
+                <label>Login ID</label>
+                <input type="text" id="loginId" placeholder="Enter Login ID">
+            </div>
+            <div class="login-field">
+                <label>Password</label>
+                <input type="password" id="loginPassword" placeholder="Enter Password">
+            </div>
+            <div class="login-error" id="loginError">Invalid Login ID or Password!</div>
+            <button class="btn-login" onclick="handleLogin()">Login to Account</button>
+        </div>
+    </div>
+
+    <header>
+        <div class="brand">
+            <div class="brand-logo">IOC</div>
+            <div class="brand-title">
+                <h1>Murlidhar Filling Station</h1>
+                <p>Indian Oil Dealer - Daily Accounts Management</p>
+            </div>
+        </div>
+        <button class="btn-logout" onclick="handleLogout()">Logout</button>
+    </header>
+
+    <div class="main-container">
+        <!-- Sidebar -->
+        <sidebar>
+            <button class="btn-add-account" onclick="openModal()">+ Add New Sheet</button>
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Search account name..." onkeyup="filterAccounts()">
+            </div>
+            <ul class="account-list" id="accountList"></ul>
+        </sidebar>
+
+        <!-- Main Content -->
+        <main class="content" id="mainContent">
+            <div class="party-card">
+                <div class="party-details">
+                    <h2 id="partyTitle">PARTY: Ghanshyam Singh Ji</h2>
+                    <p id="partySub">Vehicle/Code: 6101</p>
+                </div>
+                <div class="balance-badge">
+                    <span>Current Total Balance</span>
+                    <strong id="displayBalance">₹0.00</strong>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>S.NO</th>
+                            <th>DATE</th>
+                            <th>SLIP</th>
+                            <th>VEHICLE</th>
+                            <th>ITEM</th>
+                            <th>QNTY (L)</th>
+                            <th>RATE</th>
+                            <th>AMOUNT</th>
+                            <th>CASH/BANK</th>
+                            <th>DEBIT (+)</th>
+                            <th>CREDIT (-)</th>
+                            <th>BALANCE</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ledgerBody"></tbody>
+                </table>
+            </div>
+            <div>
+                <button class="btn-add-row" onclick="addRow()">+ Add New Entry</button>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal for New Account -->
+    <div class="modal" id="accountModal">
+        <div class="modal-content">
+            <h3>Add New Account Sheet</h3>
+            <input type="text" id="newPartyName" placeholder="Buyer / Party Name">
+            <input type="text" id="newVehicleNo" placeholder="Vehicle No / Party Code">
+            <input type="number" id="newOpeningBalance" placeholder="Opening Balance (₹)">
+            <div class="modal-actions">
+                <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+                <button class="btn-add-account" onclick="createNewAccount()">Save Sheet</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. SUPABASE CLIENT INITIALIZATION ---
+        const SUPABASE_URL = "https://ddbwmuljavlcgmqmsxsp.supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_SsZerWvRQnco-4AJ4K7FnA_S1zu2UcA";
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Authentication Logic
+        const AUTH_KEY = 'murlidhar_is_logged_in';
+
+        function checkAuth() {
+            if (localStorage.getItem(AUTH_KEY) === 'true') {
+                document.getElementById('loginOverlay').style.display = 'none';
+            } else {
+                document.getElementById('loginOverlay').style.display = 'flex';
+            }
+        }
+
+        function handleLogin() {
+            const id = document.getElementById('loginId').value.trim();
+            const pass = document.getElementById('loginPassword').value.trim();
+            const errEl = document.getElementById('loginError');
+
+            if (id === "murlidhar" && pass === "fuel123") {
+                localStorage.setItem(AUTH_KEY, 'true');
+                errEl.style.display = 'none';
+                document.getElementById('loginOverlay').style.display = 'none';
+            } else {
+                errEl.style.display = 'block';
+            }
+        }
+
+        function handleLogout() {
+            localStorage.removeItem(AUTH_KEY);
+            checkAuth();
+        }
+
+        const STORAGE_KEY = 'murlidhar_accounts_data';
+
+        let defaultAccounts = [
+            {
+                id: 1,
+                name: "Ghanshyam Singh Ji",
+                code: "6101",
+                openingBalance: 38155,
+                entries: [
+                    { date: "26/7/26", slip: "679", vehicle: "6101", item: "HSD", qnty: 174.85, rate: 98.47, amount: 17217.47, cashBank: "Cash/Yes", debit: 17217, credit: 15795 },
+                    { date: "26/7/26", slip: "545", vehicle: "6101", item: "HSD", qnty: 223.60, rate: 0, amount: 0, cashBank: "Xtra", debit: 0, credit: 22360 },
+                    { date: "01/08/26", slip: "729", vehicle: "6101", item: "HSD", qnty: 201.74, rate: 98.47, amount: 19865.33, cashBank: "Xtra", debit: 19865, credit: 0 },
+                    { date: "1/8/26", slip: "682", vehicle: "6101", item: "HSD", qnty: 210.46, rate: 98.47, amount: 20723.90, cashBank: "XTRP", debit: 20723, credit: 0 },
+                    { date: "4/8/26", slip: "751", vehicle: "", item: "", qnty: 0, rate: 0, amount: 0, cashBank: "", debit: 17217, credit: 0 }
+                ]
+            }
+        ];
+
+        let accounts = loadSavedData();
+        let activeAccountId = accounts.length > 0 ? accounts[0].id : 1;
+
+        window.onload = function() {
+            checkAuth();
+            fetchDataAndSubscribe();
+            renderAccountList();
+            renderLedger();
+        };
+
+        // --- 2. SUPABASE FETCH & ALL-EVENT REALTIME LISTENER ---
+        async function fetchDataAndSubscribe() {
+            // Fetch initial data from Supabase
+            const { data, error } = await supabaseClient
+                .from('murlidhar_accounts')
+                .select('*')
+                .eq('id', 'store_data')
+                .single();
+
+            if (data && data.content) {
+                accounts = data.content;
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(accounts));
+                renderAccountList();
+                renderLedger();
+            }
+
+            // Realtime Listener capturing INSERT, UPDATE, and DELETE via '*' wildcard
+            supabaseClient
+                .channel('public:murlidhar_accounts')
+                .on(
+                    'postgres_changes',
+                    {
+                        event: '*', // Listen for all events (INSERT, UPDATE, DELETE)
+                        schema: 'public',
+                        table: 'murlidhar_accounts'
+                    },
+                    (payload) => {
+                        console.log('Database change detected:', payload);
+                        if (payload.new && payload.new.content) {
+                            accounts = payload.new.content;
+                            localStorage.setItem(STORAGE_KEY, JSON.stringify(accounts));
+                            renderAccountList();
+                            renderLedger();
+                        }
+                    }
+                )
+                .subscribe((status) => {
+                    if (status === 'SUBSCRIBED') {
+                        console.log('Realtime listener successfully connected!');
+                    }
+                });
+        }
+
+        async function saveData() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(accounts));
+            
+            // Push changes to Supabase
+            await supabaseClient
+                .from('murlidhar_accounts')
+                .upsert({ id: 'store_data', content: accounts });
+        }
+
+        function loadSavedData() {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                try {
+                    return JSON.parse(saved);
+                } catch(e) {
+                    return defaultAccounts;
+                }
+            }
+            return defaultAccounts;
+        }
+
+        function renderAccountList() {
+            const listEl = document.getElementById('accountList');
+            listEl.innerHTML = '';
+            
+            accounts.forEach(acc => {
+                const li = document.createElement('li');
+                li.className = `account-item ${acc.id === activeAccountId ? 'active' : ''}`;
+                li.onclick = () => selectAccount(acc.id);
+                li.innerHTML = `
+                    <div>
+                        <div class="account-name">${acc.name}</div>
+                        <div class="account-code">Code: ${acc.code}</div>
+                    </div>
+                `;
+                listEl.appendChild(li);
+            });
+        }
+
+        function selectAccount(id) {
+            activeAccountId = id;
+            renderAccountList();
+            
+            const content = document.getElementById('mainContent');
+            content.style.animation = 'none';
+            content.offsetHeight;
+            content.style.animation = 'fadeIn 0.4s ease-in-out';
+
+            renderLedger();
+        }
+
+        function renderLedger() {
+            const acc = accounts.find(a => a.id === activeAccountId);
+            if(!acc) return;
+
+            document.getElementById('partyTitle').innerText = `PARTY: ${acc.name.toUpperCase()}`;
+            document.getElementById('partySub').innerText = `Vehicle / Code: ${acc.code} | Opening Balance: ₹${acc.openingBalance.toLocaleString('en-IN')}`;
+
+            const tbody = document.getElementById('ledgerBody');
+            tbody.innerHTML = '';
+
+            let runningBalance = acc.openingBalance;
+
+            acc.entries.forEach((row, index) => {
+                const debit = parseFloat(row.debit) || 0;
+                const credit = parseFloat(row.credit) || 0;
+                
+                runningBalance = runningBalance + debit - credit;
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td><input type="text" class="table-input" value="${row.date || ''}" onchange="updateRow(${index}, 'date', this.value)"></td>
+                    <td><input type="text" class="table-input" value="${row.slip || ''}" onchange="updateRow(${index}, 'slip', this.value)"></td>
+                    <td><input type="text" class="table-input" value="${row.vehicle || ''}" onchange="updateRow(${index}, 'vehicle', this.value)"></td>
+                    <td>
+                        <select class="table-input" onchange="updateRow(${index}, 'item', this.value)">
+                            <option value="HSD" ${row.item === 'HSD' ? 'selected' : ''}>HSD</option>
+                            <option value="MS" ${row.item === 'MS' ? 'selected' : ''}>MS</option>
+                            <option value="" ${!row.item ? 'selected' : ''}>-</option>
+                        </select>
+                    </td>
+                    <td><input type="number" step="any" class="table-input" value="${row.qnty !== 0 ? row.qnty : ''}" onchange="calculateAmount(${index}, 'qnty', this.value)"></td>
+                    <td><input type="number" step="any" class="table-input" value="${row.rate !== 0 ? row.rate : ''}" onchange="calculateAmount(${index}, 'rate', this.value)"></td>
+                    <td><strong id="amt_${index}">${row.amount ? row.amount.toFixed(2) : '0.00'}</strong></td>
+                    <td><input type="text" class="table-input" value="${row.cashBank || ''}" onchange="updateRow(${index}, 'cashBank', this.value)"></td>
+                    <td><input type="number" step="any" class="table-input" value="${row.debit !== 0 ? row.debit : ''}" onchange="updateRow(${index}, 'debit', this.value)"></td>
+                    <td><input type="number" step="any" class="table-input" value="${row.credit !== 0 ? row.credit : ''}" onchange="updateRow(${index}, 'credit', this.value)"></td>
+                    <td><strong id="bal_${index}">₹${runningBalance.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong></td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('displayBalance').innerText = `₹${runningBalance.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        }
+
+        function calculateAmount(index, field, value) {
+            const acc = accounts.find(a => a.id === activeAccountId);
+            acc.entries[index][field] = parseFloat(value) || 0;
+            
+            const qnty = acc.entries[index].qnty || 0;
+            const rate = acc.entries[index].rate || 0;
+            
+            if(qnty > 0 && rate > 0) {
+                const amt = qnty * rate;
+                acc.entries[index].amount = amt;
+                acc.entries[index].debit = Math.round(amt);
+            }
+            
+            saveData();
+            renderLedger();
+        }
+
+        function updateRow(index, field, value) {
+            const acc = accounts.find(a => a.id === activeAccountId);
+            if(field === 'debit' || field === 'credit') {
+                acc.entries[index][field] = parseFloat(value) || 0;
+            } else {
+                acc.entries[index][field] = value;
+            }
+            saveData();
+            renderLedger();
+        }
+
+        function addRow() {
+            const acc = accounts.find(a => a.id === activeAccountId);
+            const today = new Date();
+            const dateStr = `${today.getDate()}/${today.getMonth()+1}/${today.getFullYear().toString().substr(-2)}`;
+            
+            acc.entries.push({
+                date: dateStr,
+                slip: "",
+                vehicle: acc.code || "",
+                item: "HSD",
+                qnty: 0,
+                rate: 0,
+                amount: 0,
+                cashBank: "",
+                debit: 0,
+                credit: 0
+            });
+            saveData();
+            renderLedger();
+        }
+
+        function filterAccounts() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const items = document.querySelectorAll('.account-item');
+            
+            items.forEach(item => {
+                const text = item.innerText.toLowerCase();
+                item.style.display = text.includes(query) ? 'flex' : 'none';
+            });
+        }
+
+        function openModal() {
+            document.getElementById('accountModal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('accountModal').style.display = 'none';
+        }
+
+        function createNewAccount() {
+            const name = document.getElementById('newPartyName').value.trim();
+            const code = document.getElementById('newVehicleNo').value.trim();
+            const openingBalance = parseFloat(document.getElementById('newOpeningBalance').value) || 0;
+
+            if(!name) {
+                alert("Please enter Party Name");
+                return;
+            }
+
+            const newAcc = {
+                id: Date.now(),
+                name: name,
+                code: code,
+                openingBalance: openingBalance,
+                entries: []
+            };
+
+            accounts.push(newAcc);
+            activeAccountId = newAcc.id;
+            
+            document.getElementById('newPartyName').value = '';
+            document.getElementById('newVehicleNo').value = '';
+            document.getElementById('newOpeningBalance').value = '';
+
+            saveData();
+            closeModal();
+            renderAccountList();
+            renderLedger();
+        }
+    </script>
+</body>
+</html>
