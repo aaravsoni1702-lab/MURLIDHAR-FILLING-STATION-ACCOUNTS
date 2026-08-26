@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>FocusOrbit — a focus timer with a pulse</title>
+
+  <!-- Two-role type system: Space Grotesk carries the timer + wordmark (personality),
+       Inter carries body/UI copy (quiet, legible workhorse). -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- Layer 1: the 3D stage. This div is what Three.js measures for sizing —
+       never the window — so the canvas always fills exactly the space the
+       layout gives it, on any screen. See script.js: setupResizeHandling(). -->
+  <div id="orbit-stage">
+    <canvas id="orbit-canvas"></canvas>
+  </div>
+
+  <!-- Layer 2: page chrome, sits above the canvas -->
+  <header id="wordmark">
+    <span class="wordmark-dot" aria-hidden="true"></span>
+    <span class="wordmark-text">FocusOrbit</span>
+  </header>
+
+  <p id="tagline">One planet. One orbit. One session at a time.</p>
+
+  <!-- Layer 3: glass control panel — right rail on desktop, bottom sheet on mobile -->
+  <main id="panel" aria-label="Timer controls">
+
+    <div id="mode-row">
+      <span id="mode-label" class="mode-focus">Focus session</span>
+      <div id="session-dots" aria-label="Completed focus sessions"></div>
+    </div>
+
+    <div id="timer-display" aria-live="polite">25:00</div>
+
+    <div id="controls">
+      <button id="btn-reset" class="btn btn-ghost" aria-label="Reset session">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+      </button>
+
+      <button id="btn-primary" class="btn btn-primary" aria-label="Start session">
+        <svg id="icon-play" viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        <svg id="icon-pause" viewBox="0 0 24 24" width="22" height="22" fill="currentColor" style="display:none"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>
+      </button>
+
+      <button id="btn-skip" class="btn btn-ghost" aria-label="Skip to next session">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M6 4l10 8-10 8z"/><rect x="17" y="4" width="2.2" height="16"/></svg>
+      </button>
+    </div>
+
+    <div id="settings">
+      <div class="setting" data-key="work">
+        <span class="setting-label">Work</span>
+        <div class="stepper">
+          <button class="step-btn" data-dir="-1" aria-label="Decrease work minutes">–</button>
+          <span class="step-value" id="work-value">25</span>
+          <button class="step-btn" data-dir="1" aria-label="Increase work minutes">+</button>
+        </div>
+      </div>
+      <div class="setting" data-key="break">
+        <span class="setting-label">Break</span>
+        <div class="stepper">
+          <button class="step-btn" data-dir="-1" aria-label="Decrease break minutes">–</button>
+          <span class="step-value" id="break-value">5</span>
+          <button class="step-btn" data-dir="1" aria-label="Increase break minutes">+</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Three.js r128 via CDN — no bundler, matches the vanilla-stack requirement -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
